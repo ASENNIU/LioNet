@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
   logger->addAppender(fil_appdender);
 
   std::cout << "Hello LioNet log." << std::endl;
-  LIONET_INFO(logger) << "Test Macro";
+  LIONET_INFO(LIONET_LOG_ROOT()) << "Test Macro";
   LIONET_FMT_ERROR(logger, "Test macro fmt error %s", "lio");
   LIONET_ERROR(logger) << "Test Macro OF FILEAPPENDER";
 

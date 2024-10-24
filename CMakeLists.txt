@@ -1,19 +1,25 @@
-cmake_minimum_required(VERSION 3.10) 
-project(LioNet)
+cmake_minimum_required(VERSION 3.22.1)
+project(LioNet VERSION 1.0 LANGUAGES CXX)
 
-# 设置编译器标志
+# 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -O3 -g -Wall -Wno-deprecated -Werror -Wno-unused-function")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# 设置编译选项
+add_compile_options(-rdynamic -O3 -g -Wall -Wno-deprecated -Werror -Wno-unused-function)
+
+# include_directories(.)
+# 查找 yaml-cpp
+find_package(yaml-cpp REQUIRED)
 
 # 生成 compile_commands.json 文件
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
 # 设置输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-
-include_directories(${PROJECT_SOURCE_DIR})
 
 # 源文件
 set(LIB_SRC
@@ -23,10 +29,13 @@ set(LIB_SRC
 
 # 添加库
 add_library(lionet SHARED ${LIB_SRC})
+target_include_directories(lionet PUBLIC ${PROJECT_SOURCE_DIR})
+# target_link_libraries(lionet PRIVATE yaml-cpp)
 
 # 添加可执行文件
 add_executable(test_log tests/test_log.cc)
-add_dependencies(test_log lionet)
-target_link_libraries(test_log lionet)
+target_link_libraries(test_log PRIVATE lionet)
 
+add_executable(test_config tests/test_config.cc)
+target_link_libraries(test_config PRIVATE lionet yaml-cpp)
 
