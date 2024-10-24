@@ -6,6 +6,7 @@
 #ifndef __LIONET_LOG_H__
 #define __LIONET_LOG_H__
 
+#include <stdarg.h>
 #include <stdint.h>
 #include <cstdint>
 #include <fstream>
@@ -15,6 +16,65 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "singleton.h"
+
+/**
+ * @brief 使用流式方式将日志级别level的日志写入到logger
+ */
+#define LIONET_LOG_LEVEL(logger, level)                                \
+  if (logger->getLevel() <= level)                                     \
+  LioNet::LogEventWrap(                                                \
+      LioNet::LogEvent::ptr(new LioNet::LogEvent(                      \
+          logger, level, __FILE__, __LINE__, 0, LioNet::GetThreadId(), \
+          LioNet::GetFiberId(), time(0), "Thread")))                   \
+      .getSS()
+
+#define LIONET_DEBUG(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::DEBUG)
+
+#define LIONET_INFO(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::INFO)
+
+#define LIONET_WARN(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::WARN)
+
+#define LIONET_ERROR(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::ERROR)
+
+#define LIONET_FATAL(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::FATAL)
+
+/**
+ * @brief 使用格式化方式将日志级别level的日志写入到logger
+ */
+#define LIONET_LOG_FMT_LEVEL(logger, level, fmt, ...)                  \
+  if (logger->getLevel() <= level)                                     \
+  LioNet::LogEventWrap(                                                \
+      LioNet::LogEvent::ptr(new LioNet::LogEvent(                      \
+          logger, level, __FILE__, __LINE__, 0, LioNet::GetThreadId(), \
+          LioNet::GetFiberId(), time(0), "Thread")))                   \
+      .getEvent()                                                      \
+      ->format(fmt, __VA_ARGS__)
+
+#define LIONET_FMT_DEBUG(logger, fmt, ...) \
+  LIONET_LOG_FMT_LEVEL(logger, LioNet::LogLevel::DEBUG, fmt, __VA_ARGS__)
+
+#define LIONET_FMT_INFO(logger, fmt, ...) \
+  LIONET_LOG_FMT_LEVEL(logger, LioNet::LogLevel::INFO, fmt, __VA_ARGS__)
+
+#define LIONET_FMT_WARN(logger, fmt, ...) \
+  LIONET_LOG_FMT_LEVEL(logger, LioNet::LogLevel::WARN, fmt, __VA_ARGS__)
+
+#define LIONET_FMT_ERROR(logger, fmt, ...) \
+  LIONET_LOG_FMT_LEVEL(logger, LioNet::LogLevel::ERROR, fmt, __VA_ARGS__)
+
+#define LIONET_FMT_FATAL(logger, fmt, ...) \
+  LIONET_LOG_FMT_LEVEL(logger, LioNet::LogLevel::FATAL, fmt, __VA_ARGS__)
+
+/**
+ * @brief 获取主日志器
+ */
+#define LIONET_LOG_ROOT() LioNet::LoggerMgr::GetInstance()->getRoot()
+
+/**
+ * @brief 获取name的日志器
+ */
+#define LIONET_LOG_NAME(name) LioNet::LoggerMgr::GetInstance()->getLogger(name)
 
 namespace LioNet {
 
@@ -186,10 +246,10 @@ class LogAppender {
 
  public:
   typedef std::shared_ptr<LogAppender> ptr;
-  virtual ~LogAppender() {}
+  virtual ~LogAppender() = default;
 
   virtual void log(std::shared_ptr<Logger> Logger, LogLevel::Level level,
-                   LogEvent::ptr event);
+                   LogEvent::ptr event) = 0;
 
   void setFormatter(LogFormatter::ptr formatter);
   LogFormatter::ptr getFormatter() const { return m_formatter; }
@@ -248,7 +308,7 @@ class Logger : public std::enable_shared_from_this<Logger> {
   LogLevel::Level m_level;                  // 其中级别
   std::list<LogAppender::ptr> m_appenders;  // 日志输出目标集合
   LogFormatter::ptr m_formatter;            // 日志格式化器
-  Logger::ptr root;                         // z主日志器
+  Logger::ptr m_root;                       // z主日志器
 };
 
 /**
@@ -258,6 +318,7 @@ class StdoutLogAppender : public LogAppender {
  public:
   typedef std::shared_ptr<StdoutLogAppender> ptr;
 
+  ~StdoutLogAppender() = default;
   void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
            LogEvent::ptr event) override;
 };
@@ -270,6 +331,7 @@ class FileLogAppender : public LogAppender {
   typedef std::shared_ptr<FileLogAppender> ptr;
 
   FileLogAppender(const std::string& filename);
+  ~FileLogAppender() = default;
   void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
            LogEvent::ptr event) override;
   bool reopen();
@@ -287,7 +349,7 @@ class LoggerManager {
  public:
   LoggerManager();
 
-  Logger::ptr getLogger();
+  Logger::ptr getLogger(const std::string& name);
 
   void init();
 
@@ -297,6 +359,8 @@ class LoggerManager {
   std::map<std::string, Logger::ptr> m_loggers;  // 日志器容器
   Logger::ptr m_root;                            // 主日志器
 };
+
+typedef LioNet::Singleton<LoggerManager> LoggerMgr;  // 日志管理器单例
 
 }  // namespace LioNet
 
