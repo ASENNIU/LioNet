@@ -6,6 +6,7 @@
 #ifndef __LIONET_UTIL_H__
 #define __LIONET_UTIL_H__
 
+#include <cxxabi.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <iostream>
@@ -52,6 +53,13 @@ class FSUtil {
   static bool OpenForWrite(std::ofstream& ofs, const std::string& filename,
                            std::ios_base::openmode mode);
 };
+
+template <class T>
+const char* TypeToName() {
+  static const char* s_name =
+      abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, nullptr);
+  return s_name;
+}
 }  // namespace LioNet
 
 #endif

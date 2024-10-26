@@ -12,6 +12,10 @@ add_compile_options(-rdynamic -O3 -g -Wall -Wno-deprecated -Werror -Wno-unused-f
 # include_directories(.)
 # 查找 yaml-cpp
 find_package(yaml-cpp REQUIRED)
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
 
 # 生成 compile_commands.json 文件
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
