@@ -34,6 +34,9 @@ class Env {
   std::string getConfigPath();
 
  private:
+  std::map<std::string, std::string> m_args;
+  std::vector<std::pair<std::string, std::string>> m_helps;
+
   std::string m_program;
   std::string m_exe;
   std::string m_cwd;

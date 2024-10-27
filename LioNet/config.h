@@ -300,7 +300,7 @@ class LexicalCast<std::unordered_map<std::string, T>, std::string> {
  */
 template <class T, class FromStr = LexicalCast<std::string, T>,
           class ToStr = LexicalCast<T, std::string>>
-class ConfigVar : ConfigVarBase {
+class ConfigVar : public ConfigVarBase {
  public:
   typedef std::shared_ptr<ConfigVar> ptr;
   typedef std::function<void(const T& old_value, const T& new_value)>
@@ -346,6 +346,7 @@ class ConfigVar : ConfigVarBase {
           << " convert: string to " << TypeToName<T>() << " name=" << m_name
           << " - " << val;
     }
+    return false;
   }
 
   /**
