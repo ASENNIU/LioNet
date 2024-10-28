@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include "LioNet/config.h"
+#include "LioNet/env.h"
 #include "LioNet/log.h"
 #include "LioNet/util.h"
 
@@ -222,9 +223,40 @@ void test_class() {
   LIONET_INFO(LIONET_LOG_ROOT()) << "after: " << g_person_vec_map->toString();
 }
 
+void test_log() {
+  static LioNet::Logger::ptr system_log = LIONET_LOG_NAME("system");
+  LIONET_INFO(system_log) << "hello system" << std::endl;
+  std::cout << LioNet::LoggerMgr::GetInstance()->toYamlString() << std::endl;
+  YAML::Node root =
+      YAML::LoadFile("/home/leon/workspace/cpp/LioNet/bin/conf/log.yml");
+  LioNet::Config::LoadFromYaml(root);
+  std::cout << "=============" << std::endl;
+  std::cout << LioNet::LoggerMgr::GetInstance()->toYamlString() << std::endl;
+  std::cout << "=============" << std::endl;
+  std::cout << root << std::endl;
+  LIONET_INFO(system_log) << "hello system" << std::endl;
+
+  system_log->setFormatter("%d - %m%n");
+  LIONET_INFO(system_log) << "hello system" << std::endl;
+}
+
+void test_loadconf() {
+  LioNet::Config::LoadFromConfDir("conf");
+}
+
 int main(int argc, char** argv) {
   // test_yaml();
   // test_config();
-  test_class();
+  // test_class();
+  // test_log();
+  LioNet::EnvMgr::GetInstance()->init(argc, argv);
+  test_loadconf();
+
+  sleep(10);
+  LioNet::Config::Visit([](LioNet::ConfigVarBase::ptr var) {
+    LIONET_INFO(LIONET_LOG_ROOT())
+        << "name=" << var->getName() << " description=" << var->getDescription()
+        << " typename=" << var->getTypeName() << " value=" << var->toString();
+  });
   return 0;
 }

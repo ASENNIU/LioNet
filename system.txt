@@ -1,0 +1,5 @@
+2024-10-28 20:06:41	216375	Thread	0	[INFO]	[system]	/home/leon/workspace/cpp/LioNet/tests/test_config.cc:237	hello system
+
+2024-10-28 20:06:41	216375	Thread	0	[INFO]	[system]	/home/leon/workspace/cpp/LioNet/tests/test_config.cc:240	hello system
+
+2024-10-28 20:06:41	216375	Thread	0	[INFO]	[system]	/home/leon/workspace/cpp/LioNet/LioNet/config.cc:83	LoadConfFile file=/home/leon/workspace/cpp/LioNet/bin/conf/log.yml OK

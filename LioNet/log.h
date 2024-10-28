@@ -252,6 +252,11 @@ class LogAppender {
   virtual void log(std::shared_ptr<Logger> Logger, LogLevel::Level level,
                    LogEvent::ptr event) = 0;
 
+  /**      
+   * @brief 将日志输出目标的配置转成YAML String      
+   */
+  virtual std::string toYamlString() = 0;
+
   void setFormatter(LogFormatter::ptr formatter);
   LogFormatter::ptr getFormatter() const { return m_formatter; }
 
@@ -301,8 +306,13 @@ class Logger : public std::enable_shared_from_this<Logger> {
    * @brief 处理日志格式化器
   */
   void setFormatter(LogFormatter::ptr val);
-  void setFormatter(std::string& val);
+  void setFormatter(const std::string& val);
   LogFormatter::ptr getFormatter();
+
+  /**
+   * @brief 将日志器的配置转换成YAML String
+   */
+  std::string toYamlString();
 
  private:
   std::string m_name;                       // 日志名称
@@ -322,6 +332,8 @@ class StdoutLogAppender : public LogAppender {
   ~StdoutLogAppender() = default;
   void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
            LogEvent::ptr event) override;
+
+  std::string toYamlString() override;
 };
 
 /**
@@ -335,6 +347,12 @@ class FileLogAppender : public LogAppender {
   ~FileLogAppender() = default;
   void log(std::shared_ptr<Logger> logger, LogLevel::Level level,
            LogEvent::ptr event) override;
+  std::string toYamlString() override;
+
+  /**
+   * @brief 重新打开日志文件
+   * @return 成功返回true
+   */
   bool reopen();
 
  private:
@@ -355,6 +373,11 @@ class LoggerManager {
   void init();
 
   Logger::ptr getRoot() const { return m_root; }
+
+  /**
+   * @brief 将所有的日志器配置转成YAML String
+   */
+  std::string toYamlString();
 
  private:
   std::map<std::string, Logger::ptr> m_loggers;  // 日志器容器
