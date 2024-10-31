@@ -60,6 +60,7 @@ missing
 stamp-h1
 *.pc
 depcomp
+
 *.xcodeproj
 .vscode
 .gitignore
@@ -67,3 +68,5 @@ build
 .clangd
 bin
 log.txt
+root.txt
+system.txt

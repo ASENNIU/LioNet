@@ -33,6 +33,8 @@ set(LIB_SRC
     LioNet/util.cc
     LioNet/config.cc
     LioNet/env.cc
+    LioNet/thread.cc
+    LioNet/mutex.cc
 )
 
 # 添加库
@@ -46,3 +48,6 @@ target_link_libraries(test_log PRIVATE lionet)
 
 add_executable(test_config tests/test_config.cc)
 target_link_libraries(test_config PRIVATE lionet yaml-cpp)
+
+add_executable(test_thread tests/test_thread.cc)
+target_link_libraries(test_thread PRIVATE lionet)

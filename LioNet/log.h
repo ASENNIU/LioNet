@@ -18,6 +18,7 @@
 #include <vector>
 #include "LioNet/singleton.h"
 #include "LioNet/util.h"
+#include "LioNet/thread.h"
 
 /**
  * @brief 使用流式方式将日志级别level的日志写入到logger
@@ -27,7 +28,7 @@
   LioNet::LogEventWrap(                                                \
       LioNet::LogEvent::ptr(new LioNet::LogEvent(                      \
           logger, level, __FILE__, __LINE__, 0, LioNet::GetThreadId(), \
-          LioNet::GetFiberId(), time(0), "Thread")))                   \
+          LioNet::GetFiberId(), time(0), LioNet::Thread::GetName())))                   \
       .getSS()
 
 #define LIONET_DEBUG(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::DEBUG)
@@ -48,7 +49,7 @@
   LioNet::LogEventWrap(                                                \
       LioNet::LogEvent::ptr(new LioNet::LogEvent(                      \
           logger, level, __FILE__, __LINE__, 0, LioNet::GetThreadId(), \
-          LioNet::GetFiberId(), time(0), "Thread")))                   \
+          LioNet::GetFiberId(), time(0),  LioNet::Thread::GetName())))                   \
       .getEvent()                                                      \
       ->format(fmt, __VA_ARGS__)
 
