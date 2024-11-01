@@ -1,6 +1,6 @@
-#include "LioNet/thread.h"
-#include "LioNet/log.h"
-#include "LioNet/util.h"
+#include "thread.h"
+#include "log.h"
+#include "util.h"
 
 namespace LioNet {
 

@@ -1,6 +1,6 @@
-#include "LioNet/env.h"
-#include "LioNet/config.h"
-#include "LioNet/log.h"
+#include "env.h"
+#include "config.h"
+#include "log.h"
 
 #include <stdlib.h>
 #include <unistd.h>

@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "LioNet/singleton.h"
+#include "singleton.h"
 
 namespace LioNet {
 

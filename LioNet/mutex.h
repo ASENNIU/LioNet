@@ -7,7 +7,7 @@
 
 #include <thread>
 
-#include "LioNet/noncopyable.h"
+#include "noncopyable.h"
 
 namespace LioNet {
 

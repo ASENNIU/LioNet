@@ -10,7 +10,7 @@
 #include <list>
 #include <memory>
 #include <string>
-#include "LioNet/mutex.h"
+#include "mutex.h"
 
 namespace LioNet {
 

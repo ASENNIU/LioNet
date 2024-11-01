@@ -15,6 +15,8 @@ find_package(Boost REQUIRED)
 
 # 设置包含目录
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/LioNet)
+
 include_directories(${YAML_CPP_INCLUDE_DIR})
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})

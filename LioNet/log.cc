@@ -2,8 +2,8 @@
 #include <yaml-cpp/yaml.h>
 #include <functional>
 #include <iostream>
-#include "LioNet/config.h"
-#include "LioNet/env.h"
+#include "config.h"
+#include "env.h"
 #include "util.h"
 
 namespace LioNet {

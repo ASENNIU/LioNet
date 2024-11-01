@@ -1,6 +1,6 @@
 #include <iostream>
-#include "LioNet/log.h"
-#include "LioNet/util.h"
+#include "log.h"
+#include "util.h"
 
 int main(int argc, char** argv) {
   LioNet::Logger::ptr logger(new LioNet::Logger);
