@@ -35,6 +35,7 @@ void func3() {
 }
 
 int main() {
+  std::cout << "Thread test begin..." << std::endl;
   LIONET_INFO(g_logger) << "Thread test begin.";
   pid_t tid = LioNet::GetThreadId();
   printf("Thread ID: %d\n", tid);

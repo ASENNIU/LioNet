@@ -16,9 +16,10 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "LioNet/mutex.h"
 #include "LioNet/singleton.h"
-#include "LioNet/util.h"
 #include "LioNet/thread.h"
+#include "LioNet/util.h"
 
 /**
  * @brief 使用流式方式将日志级别level的日志写入到logger
@@ -28,7 +29,7 @@
   LioNet::LogEventWrap(                                                \
       LioNet::LogEvent::ptr(new LioNet::LogEvent(                      \
           logger, level, __FILE__, __LINE__, 0, LioNet::GetThreadId(), \
-          LioNet::GetFiberId(), time(0), LioNet::Thread::GetName())))                   \
+          LioNet::GetFiberId(), time(0), LioNet::Thread::GetName())))  \
       .getSS()
 
 #define LIONET_DEBUG(logger) LIONET_LOG_LEVEL(logger, LioNet::LogLevel::DEBUG)
@@ -49,7 +50,7 @@
   LioNet::LogEventWrap(                                                \
       LioNet::LogEvent::ptr(new LioNet::LogEvent(                      \
           logger, level, __FILE__, __LINE__, 0, LioNet::GetThreadId(), \
-          LioNet::GetFiberId(), time(0),  LioNet::Thread::GetName())))                   \
+          LioNet::GetFiberId(), time(0), LioNet::Thread::GetName())))  \
       .getEvent()                                                      \
       ->format(fmt, __VA_ARGS__)
 
@@ -248,6 +249,9 @@ class LogAppender {
 
  public:
   typedef std::shared_ptr<LogAppender> ptr;
+  typedef Spinlock MutexType;
+  // typedef NullMutex MutexType;
+
   virtual ~LogAppender() = default;
 
   virtual void log(std::shared_ptr<Logger> Logger, LogLevel::Level level,
@@ -259,7 +263,7 @@ class LogAppender {
   virtual std::string toYamlString() = 0;
 
   void setFormatter(LogFormatter::ptr formatter);
-  LogFormatter::ptr getFormatter() const { return m_formatter; }
+  LogFormatter::ptr getFormatter();
 
   void setLevel(LogLevel::Level level) { m_level = level; }
   LogLevel::Level getLevel() const { return m_level; }
@@ -268,6 +272,7 @@ class LogAppender {
   LogLevel::Level m_level = LogLevel::DEBUG;  // 日志级别
   LogFormatter::ptr m_formatter;              // 日志格式化器
   bool m_hasFormatter = false;  // 日否有自己的日志格式器
+  MutexType m_mutex;            // Mutex
 };
 
 /**
@@ -278,6 +283,7 @@ class Logger : public std::enable_shared_from_this<Logger> {
 
  public:
   typedef std::shared_ptr<Logger> ptr;
+  typedef Spinlock MutexType;
 
   Logger(const std::string& name = "root");
 
@@ -320,7 +326,8 @@ class Logger : public std::enable_shared_from_this<Logger> {
   LogLevel::Level m_level;                  // 其中级别
   std::list<LogAppender::ptr> m_appenders;  // 日志输出目标集合
   LogFormatter::ptr m_formatter;            // 日志格式化器
-  Logger::ptr m_root;                       // z主日志器
+  Logger::ptr m_root;                       // 主日志器
+  MutexType m_mutex;
 };
 
 /**
@@ -367,6 +374,8 @@ class FileLogAppender : public LogAppender {
 */
 class LoggerManager {
  public:
+  typedef Spinlock MutexType;
+
   LoggerManager();
 
   Logger::ptr getLogger(const std::string& name);
@@ -383,6 +392,7 @@ class LoggerManager {
  private:
   std::map<std::string, Logger::ptr> m_loggers;  // 日志器容器
   Logger::ptr m_root;                            // 主日志器
+  MutexType m_mutex;
 };
 
 typedef LioNet::Singleton<LoggerManager> LoggerMgr;  // 日志管理器单例

@@ -26,7 +26,7 @@ namespace LioNet {
 
 /**
  * @brief 配置变量基类
-*/
+ */
 class ConfigVarBase {
  public:
   typedef std::shared_ptr<ConfigVarBase> ptr;
@@ -302,6 +302,7 @@ template <class T, class FromStr = LexicalCast<std::string, T>,
           class ToStr = LexicalCast<T, std::string>>
 class ConfigVar : public ConfigVarBase {
  public:
+  typedef RWMutex RWMutexType;
   typedef std::shared_ptr<ConfigVar> ptr;
   typedef std::function<void(const T& old_value, const T& new_value)>
       on_change_cb;
@@ -322,6 +323,7 @@ class ConfigVar : public ConfigVarBase {
    */
   std::string toString() override {
     try {
+      RWMutexType::ReadLock lock(m_mutex);
       return ToStr()(m_val);
     } catch (std::exception& e) {
       LIONET_ERROR(LIONET_LOG_ROOT())
@@ -352,20 +354,27 @@ class ConfigVar : public ConfigVarBase {
   /**
    * @brief 获取当前参数的值
    */
-  const T getValue() { return m_val; }
+  const T getValue() {
+    RWMutexType::ReadLock lock(m_mutex);
+    return m_val;
+  }
 
   /**
-     * @brief 设置当前参数的值
-     * @details 如果参数的值有发生变化,则通知对应的注册回调函数
-     */
+   * @brief 设置当前参数的值
+   * @details 如果参数的值有发生变化,则通知对应的注册回调函数
+   */
   void setValue(const T& v) {
-    if (v == m_val) {
-      return;
+    {
+      RWMutexType::ReadLock Lock(m_mutex);
+      if (v == m_val) {
+        return;
+      }
+      for (auto& i : m_cbs) {
+        // 触发回调
+        i.second(m_val, v);
+      }
     }
-    for (auto& i : m_cbs) {
-      // 触发回调
-      i.second(m_val, v);
-    }
+    RWMutexType::WriteLock lock(m_mutex);
     m_val = v;
   }
 
@@ -380,6 +389,7 @@ class ConfigVar : public ConfigVarBase {
    */
   uint64_t addListener(on_change_cb cb) {
     static uint64_t s_fun_id = 0;
+    RWMutexType::WriteLock lock(m_mutex);
     ++s_fun_id;
     m_cbs[s_fun_id] = cb;
     return s_fun_id;
@@ -389,7 +399,10 @@ class ConfigVar : public ConfigVarBase {
    * @brief 删除回调函数
    * @param[in] key 回调函数的唯一id
    */
-  void delListener(uint64_t key) { m_cbs.erase(key); }
+  void delListener(uint64_t key) {
+    RWMutexType::WriteLock lock(m_mutex);
+    m_cbs.erase(key);
+  }
 
   /**
    * @brief 获取回调函数
@@ -397,6 +410,7 @@ class ConfigVar : public ConfigVarBase {
    * @return 如果存在返回对应的回调函数,否则返回nullptr
    */
   on_change_cb getListener(uint64_t key) {
+    RWMutexType::ReadLock lock(m_mutex);
     auto it = m_cbs.find(key);
     return it == m_cbs.end() ? nullptr : it->second;
   }
@@ -404,9 +418,13 @@ class ConfigVar : public ConfigVarBase {
   /**
    * @brief 清理所有的回调函数
    */
-  void clearListener() { m_cbs.clear(); }
+  void clearListener() {
+    RWMutexType::ReadLock lock(m_mutex);
+    m_cbs.clear();
+  }
 
  private:
+  RWMutexType m_mutex;
   T m_val;
   // 变更回调函数组, uint64_t key, 要求唯一
   std::map<uint64_t, on_change_cb> m_cbs;
@@ -415,9 +433,10 @@ class ConfigVar : public ConfigVarBase {
 /**
  * @brief ConfigVar的管理类
  * @details 提供便捷的方法创建/访问Config
-*/
+ */
 class Config {
  public:
+  typedef RWMutex RWMutexType;
   typedef std::unordered_map<std::string, ConfigVarBase::ptr> ConfigVarMap;
 
   /**
@@ -434,6 +453,7 @@ class Config {
   static typename ConfigVar<T>::ptr Lookup(const std::string& name,
                                            const T& default_value,
                                            const std::string& desc = "") {
+    RWMutexType::WriteLock lock(GetMutex());
     auto it = GetDatas().find(name);
     if (it != GetDatas().end()) {
       auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
@@ -462,12 +482,13 @@ class Config {
   }
 
   /**
-     * @brief 查找配置参数
-     * @param[in] name 配置参数名称
-     * @return 返回配置参数名为name的配置参数
-     */
+   * @brief 查找配置参数
+   * @param[in] name 配置参数名称
+   * @return 返回配置参数名为name的配置参数
+   */
   template <class T>
   static typename ConfigVar<T>::ptr Lookup(const std::string& name) {
+    RWMutexType::ReadLock lock(GetMutex());
     auto it = GetDatas().find(name);
     if (it == GetDatas().end()) {
       return nullptr;
@@ -498,12 +519,24 @@ class Config {
   static void Visit(std::function<void(ConfigVarBase::ptr)> cb);
 
  private:
+  // 如果静态变量之间存在依赖关系，使用函数返回可以避免静态初始化顺序问题，因为变量会在第一次使用时才初始化
+  // 在C++11及更高版本中，局部静态变量的初始化是线程安全的。
+  // 具体来说，当一个函数内的静态变量在多线程环境中被多个线程首次访问时，
+  // C++标准保证只有一个线程能够初始化该变量，其他线程会等待初始化完成后再继续执行。
   /**
    * @brief 返回所有的配置项
    */
   static ConfigVarMap& GetDatas() {
     static ConfigVarMap s_datas;
     return s_datas;
+  }
+
+  /**
+   * @brief 配置项的RWMutex
+   */
+  static RWMutexType& GetMutex() {
+    static RWMutexType s_mutex;
+    return s_mutex;
   }
 };
 

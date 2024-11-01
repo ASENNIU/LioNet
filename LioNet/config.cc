@@ -11,6 +11,7 @@ namespace LioNet {
 static LioNet::Logger::ptr g_logger = LIONET_LOG_NAME("system");
 
 ConfigVarBase::ptr Config::LookupBase(const std::string& name) {
+  RWMutexType::ReadLock lock(GetMutex());
   auto it = GetDatas().find(name);
   return it == GetDatas().end() ? nullptr : it->second;
 }
@@ -62,6 +63,7 @@ void Config::LoadFromYaml(const YAML::Node& root) {
 }
 
 static std::map<std::string, uint64_t> s_file2modifytime;
+static LioNet::Mutex s_mutex;
 
 void Config::LoadFromConfDir(const std::string& path, bool force) {
   std::string absolute_path =
@@ -70,12 +72,16 @@ void Config::LoadFromConfDir(const std::string& path, bool force) {
   FSUtil::ListAllFile(files, absolute_path, ".yml");
 
   for (auto& i : files) {
-    struct stat st;
-    lstat(i.c_str(), &st);
-    if (!force && s_file2modifytime[i] == static_cast<uint64_t>(st.st_mtime)) {
-      continue;
+    {
+      LioNet::Mutex::Lock lock(s_mutex);
+      struct stat st;
+      lstat(i.c_str(), &st);
+      if (!force &&
+          s_file2modifytime[i] == static_cast<uint64_t>(st.st_mtime)) {
+        continue;
+      }
+      s_file2modifytime[i] = st.st_mtime;
     }
-    s_file2modifytime[i] = st.st_mtime;
 
     try {
       YAML::Node root = YAML::LoadFile(i);
@@ -88,6 +94,7 @@ void Config::LoadFromConfDir(const std::string& path, bool force) {
 }
 
 void Config::Visit(std::function<void(ConfigVarBase::ptr)> cb) {
+  RWMutexType::ReadLock lock(GetMutex());
   ConfigVarMap& m = GetDatas();
   for (auto it = m.begin(); it != m.end(); ++it) {
     cb(it->second);
