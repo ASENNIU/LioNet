@@ -53,3 +53,6 @@ target_link_libraries(test_config PRIVATE lionet yaml-cpp)
 
 add_executable(test_thread tests/test_thread.cc)
 target_link_libraries(test_thread PRIVATE lionet)
+
+add_executable(test_util tests/test_util.cc)
+target_link_libraries(test_util PRIVATE lionet)

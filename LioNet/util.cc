@@ -1,5 +1,6 @@
 #include "util.h"
 #include <dirent.h>
+#include <execinfo.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -9,8 +10,10 @@
 #include <unistd.h>
 #include <fstream>
 
+#include "log.h"
 namespace LioNet {
 
+static LioNet::Logger::ptr g_logger = LIONET_LOG_NAME("system");
 pid_t GetThreadId() {
   return syscall(SYS_gettid);
 }
@@ -18,6 +21,55 @@ pid_t GetThreadId() {
 // TODO Fiber ID
 uint32_t GetFiberId() {
   return 0;
+}
+
+static std::string demangle(const char* str) {
+  size_t size = 0;
+  int status = 0;
+  std::string rt;
+  rt.resize(256);
+  if (1 == sscanf(str, "%*[^(]%*[^_]%255[^)+]", &rt[0])) {
+    char* v = abi::__cxa_demangle(&rt[0], nullptr, &size, &status);
+    if (v) {
+      std::string result(v);
+      free(v);
+      return result;
+    }
+  }
+  if (1 == sscanf(str, "%255s", &rt[0])) {
+    return rt;
+  }
+  return str;
+}
+
+void Backtrace(std::vector<std::string>& bt, int size, int skip) {
+  void** array = (void**)malloc(sizeof(void*) * size);
+  size_t s = ::backtrace(array, size);
+
+  char** strings = backtrace_symbols(array, size);
+  if (strings == NULL) {
+    LIONET_ERROR(g_logger) << "backtrace_synbols error";
+    free(array);
+    free(strings);
+    return;
+  }
+
+  for (size_t i = skip; i < s; ++i) {
+    bt.push_back(demangle(strings[i]));
+  }
+
+  free(array);
+  free(strings);
+}
+
+std::string BacktraceToString(int size, int skip, const std::string& prefix) {
+  std::vector<std::string> bt;
+  Backtrace(bt, size, skip);
+  std::stringstream ss;
+  for (size_t i = 0; i < bt.size(); ++i) {
+    ss << prefix << bt[i] << std::endl;
+  }
+  return ss.str();
 }
 
 uint64_t GetCurrentMS() {

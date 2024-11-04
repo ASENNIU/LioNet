@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "log.h"
+#include "macro.h"
 #include "thread.h"
 #include "util.h"
 

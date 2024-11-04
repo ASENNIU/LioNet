@@ -26,6 +26,23 @@ pid_t GetThreadId();
 uint32_t GetFiberId();
 
 /**
+ * @brief 获取当前调用栈
+ * @param[in] bt 保存调用栈
+ * @param[in] size 最多返回层面
+ * @param[in] skip 跳过栈顶的层数
+ */
+void Backtrace(std::vector<std::string>& bt, int size = 64, int skip = 1);
+
+/**
+ * @brief 获取当前调用栈信息的字符串
+ * @param[in] size 最多返回层面
+ * @param[in] skip 跳过栈顶的层数
+ * @param[in] prefix 前缀信息
+ */
+std::string BacktraceToString(int size = 64, int skip = 1,
+                              const std::string& prefix = "");
+
+/**
  * @brief 获取当前时间的毫秒
  */
 uint64_t GetCurrentMS();
