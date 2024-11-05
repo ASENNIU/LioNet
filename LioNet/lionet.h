@@ -7,6 +7,7 @@
 #define __LIONET_LIONET_H__
 
 #include "config.h"
+#include "fiber.h"
 #include "log.h"
 #include "macro.h"
 #include "thread.h"

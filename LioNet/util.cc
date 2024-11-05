@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fstream>
+#include "fiber.h"
 
 #include "log.h"
 namespace LioNet {
@@ -20,7 +21,7 @@ pid_t GetThreadId() {
 
 // TODO Fiber ID
 uint32_t GetFiberId() {
-  return 0;
+  return LioNet::Fiber::GetFiberId();
 }
 
 static std::string demangle(const char* str) {

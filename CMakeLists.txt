@@ -9,15 +9,26 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # 设置编译选项
 add_compile_options(-rdynamic -O3 -g -Wall -Wno-deprecated -Werror -Wno-unused-function)
 
-# 查找 yaml-cpp
+if(DEFINED ENV{CONDA_PREFIX})
+  set(CMAKE_IGNORE_PATH $ENV{CONDA_PREFIX})
+endif()
+
+# 查找 第三方库
 find_package(yaml-cpp REQUIRED)
 find_package(Boost REQUIRED)
+find_package(benchmark REQUIRED)
+find_library(RT_LIBRARY rt)
 
 # 设置包含目录
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/LioNet)
 
 include_directories(${YAML_CPP_INCLUDE_DIR})
+
+if(NOT RT_LIBRARY)
+  message(FATAL_ERROR "librt not found")
+endif()
+
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
@@ -37,6 +48,7 @@ set(LIB_SRC
     LioNet/env.cc
     LioNet/thread.cc
     LioNet/mutex.cc
+    LioNet/fiber.cc
 )
 
 # 添加库
@@ -56,3 +68,10 @@ target_link_libraries(test_thread PRIVATE lionet)
 
 add_executable(test_util tests/test_util.cc)
 target_link_libraries(test_util PRIVATE lionet)
+
+add_executable(test_fiber tests/test_fiber.cc)
+target_link_libraries(test_fiber PRIVATE lionet)
+
+add_executable(test_fiber_bm tests/test_fiber_bm.cc)
+target_link_libraries(test_fiber_bm PRIVATE lionet benchmark::benchmark ${RT_LIBRARY})
+
