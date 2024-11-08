@@ -3,24 +3,25 @@
 #include "config.h"
 #include "log.h"
 #include "macro.h"
+#include "scheduler.h"
 
 namespace LioNet {
 
 static Logger::ptr g_logger = LIONET_LOG_NAME("system");
 
-// static std::atomic<uint64_t> s_fiber_id{0};
-// static std::atomic<uint64_t> s_fiber_count{0};
+static std::atomic<uint64_t> s_fiber_id{0};
+static std::atomic<uint64_t> s_fiber_count{0};
 
-// Fiber ID 和 Fiber Count可能被外部访问，使用函数封装防止出现静态变量初始化顺序问题
-std::atomic<uint64_t>& fetchFiberId() {
-  static std::atomic<uint64_t> s_fiber_id{0};
-  return s_fiber_id;
-}
+// 外部并不会直接访问这些静态变量，等价于已经用函数封装了，不会出现静态变量初始化顺序问题
+// std::atomic<uint64_t>& fetchFiberId() {
+//   static std::atomic<uint64_t> s_fiber_id{0};
+//   return s_fiber_id;
+// }
 
-std::atomic<uint64_t>& fetchFiberCount() {
-  static std::atomic<uint64_t> s_fiber_count{0};
-  return s_fiber_count;
-}
+// std::atomic<uint64_t>& fetchFiberCount() {
+//   static std::atomic<uint64_t> s_fiber_count{0};
+//   return s_fiber_count;
+// }
 
 static thread_local Fiber* t_fiber = nullptr;            // 指向当前协程
 static thread_local Fiber::ptr t_threadFiber = nullptr;  // 指向主协程
@@ -55,17 +56,15 @@ Fiber::Fiber() {
     LIONET_ASSERT2(false, "getcontext");
   }
 
-  // ++s_fiber_count;
-
-  m_id = ++fetchFiberId();
-  ++fetchFiberCount();
+  m_id = ++s_fiber_id;
+  ++s_fiber_count;
 
   LIONET_DEBUG(g_logger) << "Fiber::Fiber Main";
 }
 
 Fiber::Fiber(std::function<void()> func, size_t stacksize, bool use_caller)
-    : m_id(++fetchFiberId()), m_func(func) {
-  ++fetchFiberCount();
+    : m_id(++s_fiber_id), m_func(func) {
+  ++s_fiber_count;
   m_stacksize = stacksize ? stacksize : g_fiber_stack_size->getValue();
 
   m_stack = StackAllocator::Alloc(m_stacksize);
@@ -86,9 +85,8 @@ Fiber::Fiber(std::function<void()> func, size_t stacksize, bool use_caller)
   LIONET_DEBUG(g_logger) << "Fiber::Fiber id=" << m_id;
 }
 
-//TODO 没看懂这里为什么这样写
 Fiber::~Fiber() {
-  --fetchFiberCount();
+  --s_fiber_count;
   if (m_stack) {  // 子协程析构
     LIONET_ASSERT(m_state == TERM || m_state == EXCEPT || m_state == INIT);
     StackAllocator::Dealloc(m_stack, m_stacksize);
@@ -102,7 +100,7 @@ Fiber::~Fiber() {
     }
   }
   LIONET_DEBUG(g_logger) << "Fiber::~Fiber id=" << m_id
-                         << ", total=" << fetchFiberCount();
+                         << ", total=" << s_fiber_count;
 }
 
 void Fiber::reset(std::function<void()> func) {
@@ -137,19 +135,18 @@ void Fiber::back() {
   }
 }
 
-//TODO 去除scheduler
 void Fiber::swapIn() {
   SetThis(this);
   LIONET_ASSERT(this);
   m_state = EXEC;
-  if (swapcontext(&t_threadFiber->m_ctx, &m_ctx)) {
+  if (swapcontext(&Scheduler::GetMainFiber()->m_ctx, &m_ctx)) {
     LIONET_ASSERT2(false, "swapcontext");
   }
 }
 
 void Fiber::swapOut() {
-  SetThis(t_threadFiber.get());
-  if (swapcontext(&m_ctx, &t_threadFiber->m_ctx)) {
+  SetThis(Scheduler::GetMainFiber());
+  if (swapcontext(&m_ctx, &Scheduler::GetMainFiber()->m_ctx)) {
     LIONET_ASSERT2(false, "swapcontext");
   }
 }
@@ -173,17 +170,17 @@ void Fiber::YieldToReady() {
   Fiber::ptr cur = GetThis();
   LIONET_ASSERT(cur->m_state == EXEC);
   cur->m_state = READY;
-  cur->swapOut();
+  cur->back();
 }
 
 void Fiber::YieldToHold() {
   Fiber::ptr cur = GetThis();
   LIONET_ASSERT(cur->m_state == EXEC);
-  cur->swapOut();
+  cur->back();
 }
 
 uint64_t Fiber::TotalFibers() {
-  return fetchFiberCount();
+  return s_fiber_count;
 }
 
 void Fiber::MainFunc() {

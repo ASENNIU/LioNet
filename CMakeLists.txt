@@ -49,6 +49,7 @@ set(LIB_SRC
     LioNet/thread.cc
     LioNet/mutex.cc
     LioNet/fiber.cc
+    LioNet/scheduler.cc
 )
 
 # 添加库
@@ -74,4 +75,7 @@ target_link_libraries(test_fiber PRIVATE lionet)
 
 add_executable(test_fiber_bm tests/test_fiber_bm.cc)
 target_link_libraries(test_fiber_bm PRIVATE lionet benchmark::benchmark ${RT_LIBRARY})
+
+add_executable(test_scheduler tests/test_scheduler.cc)
+target_link_libraries(test_scheduler PRIVATE lionet)
 

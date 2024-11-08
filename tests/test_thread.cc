@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include "lionet.h"
 
-LioNet::Logger::ptr g_logger = LIONET_LOG_NAME("system");
+static LioNet::Logger::ptr g_logger = LIONET_LOG_NAME("system");
 
 int count = 0;
 // LioNet::Mutex mutex;
