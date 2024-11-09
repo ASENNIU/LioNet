@@ -564,9 +564,11 @@ void LogFormatter::init() {
 
 LoggerManager::LoggerManager() {
   m_root.reset(new Logger);
-  m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
+  applyDefaultConfig(m_root);
+  // m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
 
   m_loggers[m_root->m_name] = m_root;
+  applyDefaultConfig(m_root);
 
   init();
 }
@@ -579,11 +581,17 @@ Logger::ptr LoggerManager::getLogger(const std::string& name) {
   }
 
   Logger::ptr logger(new Logger(name));
+  applyDefaultConfig(logger);
   logger->m_root = m_root;
   m_loggers[name] = logger;
   return logger;
 }
 
+void LoggerManager::applyDefaultConfig(Logger::ptr logger) {
+  logger->addAppender(std::make_shared<StdoutLogAppender>());
+  std::string filename = "log/" + logger->getName() + ".txt";
+  logger->addAppender(std::make_shared<FileLogAppender>(filename));
+}
 struct LogAppenderDefine {
   int type = 0;  // 1 File, 2 Stdout
   LogLevel::Level level = LogLevel::UNKNOW;

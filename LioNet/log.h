@@ -384,6 +384,8 @@ class LoggerManager {
 
   Logger::ptr getRoot() const { return m_root; }
 
+  void applyDefaultConfig(Logger::ptr logger);
+
   /**
    * @brief 将所有的日志器配置转成YAML String
    */
