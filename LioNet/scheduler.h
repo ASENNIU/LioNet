@@ -93,7 +93,7 @@ class Scheduler {
     {
       MutexType::Lock lock(m_mutex);
       while (begin != end) {
-        need_tickle = scheduleNonLock(&*begin, -1) || need_tickle;
+        need_tickle = scheduleNonLock(*begin, -1) || need_tickle;
         ++begin;
       }
     }

@@ -1,6 +1,6 @@
+#include "scheduler.h"
 #include "log.h"
 #include "macro.h"
-#include "scheduler.h"
 
 namespace LioNet {
 
@@ -165,7 +165,8 @@ void Scheduler::run() {
       ft.fiber->swapIn();
       --m_activeThreadCount;
 
-      if (ft.fiber->getState() == Fiber::READY) {
+      if (ft.fiber->getState() == Fiber::READY ||
+          ft.fiber->getState() == Fiber::HOLD) {
         schedule(ft.fiber);
       } else if (ft.fiber->getState() != Fiber::TERM &&
                  ft.fiber->getState() != Fiber::EXCEPT) {
@@ -182,7 +183,8 @@ void Scheduler::run() {
 
       func_fiber->swapIn();
       --m_activeThreadCount;
-      if (func_fiber->getState() == Fiber::READY) {
+      if (func_fiber->getState() == Fiber::READY ||
+          func_fiber->getState() == Fiber::HOLD) {
         schedule(func_fiber);
         func_fiber.reset();
       } else if (func_fiber->getState() == Fiber::EXCEPT ||

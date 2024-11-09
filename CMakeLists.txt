@@ -79,3 +79,10 @@ target_link_libraries(test_fiber_bm PRIVATE lionet benchmark::benchmark ${RT_LIB
 add_executable(test_scheduler tests/test_scheduler.cc)
 target_link_libraries(test_scheduler PRIVATE lionet)
 
+
+add_executable(test_fiber_sched tests/test_fiber_sched.cc)
+target_link_libraries(test_fiber_sched PRIVATE lionet)
+
+add_executable(test_fiber_sched_bm tests/test_fiber_sched_bm.cc)
+target_link_libraries(test_fiber_sched_bm PRIVATE lionet benchmark::benchmark ${RT_LIBRARY})
+

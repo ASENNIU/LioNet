@@ -81,7 +81,7 @@ Fiber::Fiber(std::function<void()> func, size_t stacksize, bool use_caller)
   } else {
     makecontext(&m_ctx, &Fiber::CallerMainFunc, 0);
   }
-
+  m_state = INIT;
   LIONET_DEBUG(g_logger) << "Fiber::Fiber id=" << m_id;
 }
 
@@ -170,13 +170,16 @@ void Fiber::YieldToReady() {
   Fiber::ptr cur = GetThis();
   LIONET_ASSERT(cur->m_state == EXEC);
   cur->m_state = READY;
-  cur->back();
+  // cur->back();
+  cur->swapOut();
 }
 
 void Fiber::YieldToHold() {
   Fiber::ptr cur = GetThis();
   LIONET_ASSERT(cur->m_state == EXEC);
-  cur->back();
+  cur->m_state = HOLD;
+  // cur->back();
+  cur->swapOut();
 }
 
 uint64_t Fiber::TotalFibers() {
