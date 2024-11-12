@@ -65,6 +65,7 @@ void test_fibers(size_t fiber_count, size_t thread_count) {
 }
 
 int main() {
+  LioNet::Thread::SetName("main");
   g_logger->setLevel(LioNet::LogLevel::ERROR);
   std::vector<size_t> fiber_counts = {1000, 3000};
   std::vector<size_t> thread_counts = {1, 2, 4, 8, 16};

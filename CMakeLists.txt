@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # 设置编译选项
-add_compile_options(-rdynamic -O3 -g -Wall -Wno-deprecated -Werror -Wno-unused-function)
+# add_compile_options(-rdynamic -O3 -g -Wall -Wno-deprecated -Werror -Wno-unused-function)
+add_compile_options(-rdynamic -O1 -g -Wall -Wno-deprecated -Werror -Wno-unused-function)
 
 if(DEFINED ENV{CONDA_PREFIX})
   set(CMAKE_IGNORE_PATH $ENV{CONDA_PREFIX})

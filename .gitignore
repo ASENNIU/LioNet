@@ -72,3 +72,6 @@ root.txt
 system.txt
 *.dump
 log
+perf_analysis
+*.ipynb
+*.svg
